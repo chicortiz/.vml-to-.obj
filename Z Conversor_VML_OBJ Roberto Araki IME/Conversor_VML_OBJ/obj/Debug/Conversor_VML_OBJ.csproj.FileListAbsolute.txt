@@ -1,0 +1,8 @@
+E:\Arquivos\Projetos_VStudio2008\Conversor_VML_OBJ\Conversor_VML_OBJ\bin\Debug\Conversor_VML_OBJ.exe
+E:\Arquivos\Projetos_VStudio2008\Conversor_VML_OBJ\Conversor_VML_OBJ\bin\Debug\Conversor_VML_OBJ.pdb
+E:\Arquivos\Projetos_VStudio2008\Conversor_VML_OBJ\Conversor_VML_OBJ\obj\Debug\ResolveAssemblyReference.cache
+E:\Arquivos\Projetos_VStudio2008\Conversor_VML_OBJ\Conversor_VML_OBJ\obj\Debug\Conversor_VML_OBJ.Properties.Resources.resources
+E:\Arquivos\Projetos_VStudio2008\Conversor_VML_OBJ\Conversor_VML_OBJ\obj\Debug\Conversor_VML_OBJ.csproj.GenerateResource.Cache
+E:\Arquivos\Projetos_VStudio2008\Conversor_VML_OBJ\Conversor_VML_OBJ\obj\Debug\Conversor_VML_OBJ.exe
+E:\Arquivos\Projetos_VStudio2008\Conversor_VML_OBJ\Conversor_VML_OBJ\obj\Debug\Conversor_VML_OBJ.pdb
+E:\Arquivos\Projetos_VStudio2008\Conversor_VML_OBJ\Conversor_VML_OBJ\obj\Debug\Conversor_VML_OBJ.frmConversaoVMLOBJ.resources
