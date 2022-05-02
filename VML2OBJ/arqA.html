@@ -1,0 +1,350 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+
+    <script>
+    //
+        var g_cubeOBJ = "OBJ File: v -1.4504 -0.8114 -0.3687 v -0.0456 -0.3753 -0.1015 v -0.3729 -1.5323 -0.8103 v -0.1594 -1.4667 -1.0761 v 0.2542 1.1922 0.5529 v 0.9846 -1.3097 -0.9799 v 0.8631 1.3236 0.6334 v 0.0474 -0.1076 -0.3099 v 0.9239 0.0365 -0.2216 v 0.9543 -0.6218 -0.6249 v -0.0560 -0.7724 -0.7171 v 0.9694 -0.9510 -0.8266 v -0.0043 -0.4400 -0.5135 v 0.9391 -0.2927 -0.4232 v -0.1077 -1.1047 -0.9208 v 0.9770 -1.1156 -0.9274 v 0.0216 -0.2738 -0.4117 v 0.9467 -0.4572 -0.5241 v -0.0818 -0.9385 -0.8189 v 0.9619 -0.7864 -0.7257 v -0.0301 -0.6062 -0.6153 v 0.9315 -0.1281 -0.3224 v -0.1335 -1.2709 -1.0226 v 0.9808 -1.1979 -0.9778 v 0.0345 -0.1907 -0.3608 v 0.9505 -0.5395 -0.5745 v -0.0689 -0.8554 -0.7680 v 0.9656 -0.8687 -0.7762 v -0.0172 -0.5231 -0.5644 v 0.9353 -0.2104 -0.3728 v -0.1206 -1.1878 -0.9717 v 0.9732 -1.0333 -0.8770 v 0.0086 -0.3569 -0.4626 v 0.9429 -0.3749 -0.4737 v -0.0948 -1.0216 -0.8698 v 0.9581 -0.7041 -0.6753 v -0.0431 -0.6893 -0.6662 v 0.9277 -0.0458 -0.2720 v -0.1465 -1.3540 -1.0735 v -1.9031 0.3930 0.1677 v 1.4657 0.6198 0.3066 v -1.4939 -0.5314 -0.3986 v 1.7385 0.1374 0.0111 v -2.0095 0.8224 0.6323 v -0.0797 0.9329 0.7000 v -1.2797 0.0667 0.1693 v 0.1453 -0.1834 0.0161 v -0.6385 1.0803 0.9955 v 1.2550 0.7438 0.7894 v 0.1376 0.2072 0.4607 v 1.2744 -0.4501 0.0579 f 4 5 7 6 f 25 8 9 38 f 27 11 10 36 f 31 15 12 32 f 29 13 14 34 f 37 21 18 26 f 39 23 16 24 f 35 19 20 28 f 33 17 22 30 f 40 41 43 42 f 44 45 47 46 f 48 49 51 50 f 2 3 1";
+    //
+        var g_cubeOBJparsed = g_cubeOBJ.split(" ");
+        var g_ctx;
+        var g_renderEngine;
+        var g_testObject;
+        var g_camera;
+        var g_clipSpace;
+        var g_FPSManager;
+        var g_keyPressed = [];
+        var g_canvasWidth = 600;
+        var g_canvasHeight = 400;
+        var g_MonkeySpin = 0;
+        var g_frameCount = 0;
+
+        function Matrix() {
+            var tempArray = new Array(4)
+            var arrayCount;
+            for (arrayCount = 0; arrayCount < 4; arrayCount++)
+                tempArray[arrayCount] = new Array(4)
+            var rowCount, columnCount;
+            for (rowCount = 0; rowCount < 4; rowCount++)
+                for (columnCount = 0; columnCount < 4; columnCount++) {
+                    if (columnCount != rowCount) {
+                        tempArray[rowCount][columnCount] = 0;
+                    } else {
+                        tempArray[rowCount][columnCount] = 1;
+                    }
+                }
+            return tempArray;
+        }
+
+        function Normal(x, y, z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        function Vertex(x, y, z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = 1;
+        }
+
+        function Polygon(verticesArray) {
+            this.vertex = verticesArray;
+            this.color = "rgba(255,0,0, 0.7)";
+    //    
+    // The line below assigns a ramdom color to each face:
+	//this.color = "rgba("+Math.round(Math.random()*255)+",            "+Math.round(Math.random()*255)+","+Math.round(Math.random()*255)+", 0.5)";
+    //
+        }
+
+        function FPSManager() {
+            this.dateNow;
+            this.timeNow;
+            this.timeLater;
+            this.update = function() {
+                this.dateNow = new Date();
+                this.timeNow = this.dateNow.getTime();
+                g_ctx.fillText(1000 / (this.timeNow - this.timeLater), 10, 50);
+                this.timeLater = this.timeNow;
+            }
+        }
+
+        function Object() {
+            this.verticesArray = [];
+            this.polygonsArray = [];
+            this.centroidVerticesArray = [];
+            this.transformMatrix = new Matrix();
+            this.normalsArray = [];
+            this.computeCentroid = function() {
+                var averageX, averageY, averageZ;
+                var polygonCount;
+                var vertexCount;
+                for (polygonCount = 0; polygonCount < this.polygonsArray.length; polygonCount++) {
+                    averageX = 0.0;
+                    averageY = 0.0;
+                    averageZ = 0.0;
+                    for (vertexCount = 0; vertexCount < this.polygonsArray[polygonCount].vertex.length; vertexCount++) {
+                        averageX += this.polygonsArray[polygonCount].vertex[vertexCount].x;
+                        averageY += this.polygonsArray[polygonCount].vertex[vertexCount].y;
+                        averageZ += this.polygonsArray[polygonCount].vertex[vertexCount].z;
+                    }
+                    averageX = averageX / this.polygonsArray[polygonCount].vertex.length;
+                    averageY = averageY / this.polygonsArray[polygonCount].vertex.length;
+                    averageZ = averageZ / this.polygonsArray[polygonCount].vertex.length;
+                    this.centroidVerticesArray.push(new Vertex(averageX, averageY, averageZ));
+                }
+            }
+            this.loadOBJ = function() {
+    //        
+                var dataCount;
+                var verticesCount;
+                var verticesArray = [];
+                for (dataCount = 0; dataCount < g_cubeOBJparsed.length; dataCount++) {
+                    if (g_cubeOBJparsed[dataCount] == "v") {
+                        this.verticesArray.push(new Vertex(parseFloat(g_cubeOBJparsed[dataCount + 1]),
+                            parseFloat(g_cubeOBJparsed[dataCount + 2]),
+                            parseFloat(g_cubeOBJparsed[dataCount + 3])));
+                    }
+                    if (g_cubeOBJparsed[dataCount] == "f") {
+                        verticesArray = [];
+                        verticesCount = dataCount + 1;
+                        while (g_cubeOBJparsed[verticesCount] != "f" && verticesCount < g_cubeOBJparsed.length) {
+                            verticesArray.push(this.verticesArray[g_cubeOBJparsed[verticesCount] - 1]);
+                            verticesCount = verticesCount + 1;
+                        }
+                        this.polygonsArray.push(new Polygon(verticesArray));
+                    }
+                }
+                this.computeCentroid();
+    //    
+            }
+        }
+
+        function Camera() {
+            this.transformMatrix = new Matrix();
+        }
+
+        function RenderEngine() {
+            this.clipSpace = new Matrix();
+            this.clipSpace = [
+                [1.305, 0, 0, 0],
+                [0, 1.740, 0, 0],
+                [0, 0, 1.002, 1],
+                [0, 0, -2.002, 0]
+            ];
+            this.render = function() {
+                var polygonCount;
+                var zClip;
+                var zDepthOfPolygons = [];
+                var zDepthOfPolygonsSorted = [];
+                var polygonIndicesDepthSorted = [];
+    //                
+                var finalMatrix = MatrixMultiplication(g_testObject.transformMatrix, g_camera.transformMatrix);
+                finalMatrix = MatrixMultiplication(finalMatrix, this.clipSpace);
+    //
+                for (polygonCount = 0; polygonCount < g_testObject.polygonsArray.length; polygonCount++) {
+                    zClip = g_testObject.centroidVerticesArray[polygonCount].x * finalMatrix[0][2] + g_testObject.centroidVerticesArray
+[polygonCount].y * finalMatrix[1][2] + g_testObject.centroidVerticesArray[polygonCount].z * finalMatrix[2][2] + 
+g_testObject.centroidVerticesArray[polygonCount].w * finalMatrix[3][2];
+                    zDepthOfPolygons.push(zClip);
+                }
+                zDepthOfPolygonsSorted = zDepthOfPolygons.slice();
+                zDepthOfPolygonsSorted.sort(function(a, b) {
+                    return a - b
+                });
+                var sortCount, chaosCount;
+                for (sortCount = 0; sortCount < zDepthOfPolygonsSorted.length; sortCount++) {
+                    for (chaosCount = 0; chaosCount < zDepthOfPolygons.length; chaosCount++) {
+                        if (zDepthOfPolygonsSorted[sortCount] == zDepthOfPolygons[chaosCount]) {
+                            polygonIndicesDepthSorted.push(chaosCount);
+                            zDepthOfPolygons[chaosCount] = 0;
+                        }
+                    }
+                }
+    //        
+                var drawingPolygon;
+                var xScreen = [];
+                var yScreen = [];
+                var clipVertex;
+                var vertexCount;
+    //                
+                for (polygonCount = 0; polygonCount < polygonIndicesDepthSorted.length; polygonCount++) {
+                    drawingPolygon = g_testObject.polygonsArray[polygonIndicesDepthSorted[polygonCount]];
+                    xScreen = [];
+                    yScreen = [];
+                    for (vertexCount = 0; vertexCount < drawingPolygon.vertex.length; vertexCount++) {
+    //                
+                        clipVertex = vertexMultiplication(drawingPolygon.vertex[vertexCount], finalMatrix);
+                        xScreen.push((clipVertex.x * g_canvasWidth) / (2 * clipVertex.w) + g_canvasWidth / 2);
+                        yScreen.push((clipVertex.y * g_canvasHeight) / (2 * clipVertex.w) + g_canvasHeight / 2);
+    // END LAST PART OF PART 4
+    //
+                    }
+                    this.drawPolygon(xScreen, yScreen, drawingPolygon.color);
+                }
+    //        
+            }
+            this.drawPolygon = function(xCoords, yCoords, color) {
+                var coordsCounter = xCoords.length;
+                g_ctx.fillStyle = color;
+                g_ctx.beginPath();
+                g_ctx.moveTo(xCoords[0], yCoords[0]);
+                for (coordsCounter = 1; coordsCounter < xCoords.length; coordsCounter++) g_ctx.lineTo(xCoords[coordsCounter], yCoords
+[coordsCounter]);
+                g_ctx.moveTo(xCoords[0], yCoords[0]);
+                g_ctx.stroke();
+                g_ctx.fill();
+                g_ctx.closePath();
+            }
+        }
+    //
+        function TranslationMatrix(x, y, z) {
+            var outputMatrix = new Matrix();
+            outputMatrix[3][0] = x;
+            outputMatrix[3][1] = y;
+            outputMatrix[3][2] = z;
+            return outputMatrix;
+        }
+
+        function vertexMultiplication(vertex, matrix) {
+            var outputVertex = new Vertex(0, 0, 0);
+            outputVertex.x = vertex.x * matrix[0][0] + vertex.y * matrix[1][0] + vertex.z * matrix[2][0] + vertex.w * matrix[3][0];
+            outputVertex.y = vertex.x * matrix[0][1] + vertex.y * matrix[1][1] + vertex.z * matrix[2][1] + vertex.w * matrix[3][1];
+            outputVertex.z = vertex.x * matrix[0][2] + vertex.y * matrix[1][2] + vertex.z * matrix[2][2] + vertex.w * matrix[3][2];
+            outputVertex.w = vertex.x * matrix[0][3] + vertex.y * matrix[1][3] + vertex.z * matrix[2][3] + vertex.w * matrix[3][3];
+            return outputVertex;
+        }
+
+        function MatrixMultiplication(MatrixA, MatrixB) {
+            var rowCount, columnCount;
+            var outputMatrix = new Matrix();
+            for (rowCount = 0; rowCount < 4; rowCount++)
+                for (columnCount = 0; columnCount < 4; columnCount++) {
+                    outputMatrix[rowCount][columnCount] = MatrixA[rowCount][0] * MatrixB[0][columnCount] +
+                        MatrixA[rowCount][1] * MatrixB[1][columnCount] +
+                        MatrixA[rowCount][2] * MatrixB[2][columnCount] +
+                        MatrixA[rowCount][3] * MatrixB[3][columnCount];
+                }
+            return outputMatrix;
+        }
+
+        function RotationXMatrix(angle) {
+            var outputMatrix = new Matrix();
+            outputMatrix[0][0] = 1;
+            outputMatrix[0][1] = 0;
+            outputMatrix[0][2] = 0;
+            outputMatrix[0][3] = 0;
+            outputMatrix[1][0] = 0;
+            outputMatrix[1][1] = Math.cos(angle);
+            outputMatrix[1][2] = Math.sin(angle);
+            outputMatrix[1][3] = 0;
+            outputMatrix[2][0] = 0;
+            outputMatrix[2][1] = -Math.sin(angle);
+            outputMatrix[2][2] = Math.cos(angle);
+            outputMatrix[2][3] = 0;
+            outputMatrix[3][0] = 0;
+            outputMatrix[3][1] = 0;
+            outputMatrix[3][2] = 0;
+            outputMatrix[3][3] = 1;
+            return outputMatrix;
+        }
+
+        function RotationYMatrix(angle) {
+            var outputMatrix = new Matrix();
+            outputMatrix[0][0] = Math.cos(angle);
+            outputMatrix[0][1] = 0;
+            outputMatrix[0][2] = -Math.sin(angle);
+            outputMatrix[0][3] = 0;
+            outputMatrix[1][0] = 0;
+            outputMatrix[1][1] = 1;
+            outputMatrix[1][2] = 0;
+            outputMatrix[1][3] = 0;
+            outputMatrix[2][0] = Math.sin(angle);
+            outputMatrix[2][1] = 0;
+            outputMatrix[2][2] = Math.cos(angle);
+            outputMatrix[2][3] = 0;
+            outputMatrix[3][0] = 0;
+            outputMatrix[3][1] = 0;
+            outputMatrix[3][2] = 0;
+            outputMatrix[3][3] = 1;
+            return outputMatrix;
+        }
+
+        function RotationZMatrix(angle) {
+            var outputMatrix = new Matrix();
+            outputMatrix[0][0] = Math.cos(angle);
+            outputMatrix[0][1] = Math.sin(angle);
+            outputMatrix[0][2] = 0;
+            outputMatrix[0][3] = 0;
+            outputMatrix[1][0] = -Math.sin(angle);
+            outputMatrix[1][1] = Math.cos(angle);
+            outputMatrix[1][2] = 0;
+            outputMatrix[1][3] = 0;
+            outputMatrix[2][0] = 0;
+            outputMatrix[2][1] = 0;
+            outputMatrix[2][2] = 1;
+            outputMatrix[2][3] = 0;
+            outputMatrix[3][0] = 0;
+            outputMatrix[3][1] = 0;
+            outputMatrix[3][2] = 0;
+            outputMatrix[3][3] = 1;
+            return outputMatrix;
+        }
+
+    // Main Function
+        function initialize() {
+    // Obtaining 2D context to allow rendering
+		g_ctx = document.getElementById("canvas").getContext("2d");
+    // Creating the 3D Object
+		g_testObject = new Object();
+    // Creating the camera
+		g_camera = new Camera();
+    // Creating the FPS manager		
+		g_FPSManager = new FPSManager();
+    // Creating the rendering engine
+		g_renderEngine = new RenderEngine();
+    // Configuring keyboard events
+		window.document.onkeydown = onKeyDown;
+		window.document.onkeyup = onKeyUp;
+    // Loading the geometry from the .obj file
+		g_testObject.loadOBJ();
+    // Configuring Matrixes
+		g_testObject.transformMatrix = RotationXMatrix(1.57);
+		g_testObject.transformMatrix = MatrixMultiplication(g_testObject.transformMatrix, RotationYMatrix(g_MonkeySpin));
+		g_testObject.transformMatrix = MatrixMultiplication(g_testObject.transformMatrix, TranslationMatrix(0, 0, -5));
+    // Shooting the delayer
+		setInterval(nextFrame, 16.67);
+        }
+
+        function nextFrame() {
+                g_frameCount++;
+                g_ctx.clearRect(0, 0, g_canvasWidth, g_canvasHeight);
+                g_testObject.transformMatrix = new Matrix();
+                g_testObject.transformMatrix = RotationXMatrix(1.57);
+                g_testObject.transformMatrix = MatrixMultiplication(g_testObject.transformMatrix, RotationYMatrix(g_frameCount / 200));
+                g_testObject.transformMatrix = MatrixMultiplication(g_testObject.transformMatrix, TranslationMatrix(0, 0, -5));
+                g_renderEngine.render();
+                g_FPSManager.update();
+            }
+    // A key is being held down, so handle it
+        function onKeyDown(event) {
+                event = event || window.event;
+                g_keyPressed[event.keyCode] = true;
+            }
+    // A key has been released, so handle it
+        function onKeyUp(event) {
+            event = event || window.event;
+            g_keyPressed[event.keyCode] = false;
+        }
+    </script>
+    <title>html5</title>
+
+</head>
+
+<body onload="initialize();">
+    <canvas id="canvas" width="600" height="400"></canvas>
+
+
+
+
+</body></html>
