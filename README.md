@@ -1,3 +1,12 @@
+# Related Links to understand the context of this project:
+
+1) https://en.wikipedia.org/wiki/Verse_protocol
+
+2) https://github.com/pwarren0/verse_apps
+
+# Copy of verse applicatications and code by Eskil Steenberg in July 2015. LoqAirou 2 doesn't draw, but saves in wavefront .obj and the source code is present. Written in C89.  
+
+
 # .vml-to-.obj in C#
 Conversion of vml (The .xml file format of the Uni-verse project) to .obj (3d file format created by Wavefront) 
 
